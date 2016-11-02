@@ -1,0 +1,62 @@
+<html>
+<style>
+	textarea {
+		width: 100%;
+	}
+	textarea#txtNeedles {
+		height: 50vh;
+	}
+</style>
+<body>
+	<h1>Needles</h1>
+	<textarea id="txtNeedles"></textarea>
+	<h1>Haystack</h1>
+	<textarea id="txtHaystack"></textarea>
+	<button onclick="countOccurences();">count occurences</button>
+</body>
+
+<script>
+	function parseRegExp(pattern) {
+		var parts = /^\/(.*)\/(\w*)$/.exec(pattern);
+		if (!parts) return false;
+		var regexp = parts[1], options = parts[2];
+		try {
+			return new RegExp(regexp, options);
+		} catch(e) {
+			return false;
+		}
+	}
+	function countOccurences() {
+		var Needles = txtNeedles.value.split('\n');
+		var Haystack = txtHaystack.value.split('\n');
+		txtHaystack.value = '';
+		for (var n in Needles) {
+			var needle = Needles[n];
+			needle = needle.substring(0, needle.lastIndexOf(','));
+			if (!needle) continue;
+			var customRegExp = parseRegExp(needle);
+			if (customRegExp)                                         // search for user defined RegExp. (This code is only safe if it runs in their browser.)
+				needle = customRegExp;
+			else if (needle.startsWith('"') && needle.endsWith('"'))  // search for a literal occurence of "UsErNAME"
+				needle = new RegExp(`\\b${needle.substring(1, needle.length - 1).replace(/%/g, "%%").replace(/([\^"&<>\|])/g, "^$1")}\\b`, "g");
+			else {                                                    // search for userId(needle)
+				needle = new RegExp(`\\b${needle.replace(/[^a-zA-Z0-9_]/g, "").split('').join('\\W*')}\\b`, "ig");
+			}
+			var count = 0;
+			for (var h of Haystack) {  
+				if (needle.test(h))
+					count++;
+			}
+			Needles[n] = [Needles[n], (count || ' ').toString()];
+		}
+		var maxLength = [0, 0];
+		for (var part of Needles) {
+			if (!Array.isArray(part)) continue;
+			if (part[0].length > maxLength[0]) maxLength[0] = part[0].length;
+			if (part[1].length > maxLength[1]) maxLength[1] = part[1].length;
+		}
+		txtNeedles.value = Needles.map( x => !Array.isArray(x) ? x :
+			(x[0] + " ".repeat(maxLength[0] - x[0].length) + " | " + " ".repeat(maxLength[1] - x[1].length) + x[1])
+		).join('\n');
+	}
+</script>
